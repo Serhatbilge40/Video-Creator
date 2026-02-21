@@ -7,6 +7,7 @@ import {
   Monitor,
   Sparkles,
   Heart,
+  Loader2,
 } from "lucide-react";
 import { useVideoStore } from "@/store/video-store";
 import { cn } from "@/lib/utils";
@@ -34,12 +35,21 @@ export function VideoCard({ video, index }: VideoCardProps) {
           alt={video.prompt}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        {/* Play overlay */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-          <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-foreground/90 backdrop-blur-sm">
-            <Play className="h-5 w-5 text-white" fill="white" />
+        {/* Status overlay */}
+        {video.status === "completed" ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+            <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-foreground/90 backdrop-blur-sm">
+              <Play className="h-5 w-5 text-white" fill="white" />
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm">
+            <Loader2 className="h-8 w-8 animate-spin text-white mb-2" />
+            <span className="text-white text-xs font-medium">
+              {video.status === "failed" ? "Fehlgeschlagen" : `Generiert... ${video.progress}%`}
+            </span>
+          </div>
+        )}
         {/* Duration badge */}
         <div className="absolute bottom-3 right-3 rounded-lg bg-black/60 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-md">
           {video.duration}s
@@ -84,11 +94,17 @@ export function VideoCard({ video, index }: VideoCardProps) {
 
         {/* Actions */}
         <div className="mt-5 flex items-center gap-2">
-          <button className="flex flex-1 items-center justify-center gap-2 rounded-md bg-foreground py-2 text-xs font-medium text-background hover:opacity-90 transition-all">
+          <button
+            disabled={video.status !== "completed"}
+            className="flex flex-1 items-center justify-center gap-2 rounded-md bg-foreground py-2 text-xs font-medium text-background hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Play className="h-3.5 w-3.5" />
             Abspielen
           </button>
-          <button className="flex flex-1 items-center justify-center gap-2 rounded-md border border-border bg-surface py-2 text-xs font-medium text-foreground hover:bg-surface-hover transition-all">
+          <button
+            disabled={video.status !== "completed"}
+            className="flex flex-1 items-center justify-center gap-2 rounded-md border border-border bg-surface py-2 text-xs font-medium text-foreground hover:bg-surface-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Download className="h-3.5 w-3.5" />
             Download
           </button>

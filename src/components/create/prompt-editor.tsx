@@ -2,17 +2,23 @@
 
 import { useVideoStore } from "@/store/video-store";
 import { PROMPT_SUGGESTIONS } from "@/lib/types";
-import { Lightbulb, RotateCcw, Wand2 } from "lucide-react";
+import { Lightbulb, RotateCcw, Wand2, Plus, GripVertical, X } from "lucide-react";
 import { ImageUpload } from "@/components/create/image-upload";
 
 export function PromptEditor() {
-  const { prompt, setPrompt, negativePrompt, setNegativePrompt } =
+  const { prompt, setPrompt, negativePrompt, setNegativePrompt, storyboard, addToStoryboard, removeFromStoryboard } =
     useVideoStore();
 
   const handleEnhance = () => {
     if (!prompt.trim()) return;
     const enhancements = " cinematic lighting, highly detailed, 8k resolution, photorealistic, masterpiece, depth of field, sharp focus, dramatic lighting";
     setPrompt(prompt.trim() + enhancements);
+  };
+
+  const handleAddToStoryboard = () => {
+    if (!prompt.trim()) return;
+    addToStoryboard(prompt.trim());
+    setPrompt(""); // Clear prompt after adding to storyboard
   };
 
   return (
@@ -53,7 +59,47 @@ export function PromptEditor() {
             </button>
           )}
         </div>
+
+        {/* Storyboard Add Button */}
+        {prompt.trim() && (
+          <div className="mt-3 flex justify-end">
+            <button
+              onClick={handleAddToStoryboard}
+              className="flex items-center gap-1.5 rounded-md bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent/20 transition-all font-sans"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Zum Storyboard hinzufügen
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Storyboard Queue Visualizer */}
+      {storyboard.length > 0 && (
+        <div className="rounded-xl border border-accent/20 bg-accent/5 p-4">
+          <h3 className="mb-3 text-xs font-semibold text-accent uppercase tracking-wider flex items-center gap-2">
+            🎞️ Storyboard Modus ({storyboard.length} Szenen)
+          </h3>
+          <div className="space-y-2">
+            {storyboard.map((scene, index) => (
+              <div key={index} className="group relative flex items-start gap-3 rounded-md bg-surface p-3 border border-border/50 text-sm">
+                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/10 text-[10px] font-bold text-accent">
+                  {index + 1}
+                </div>
+                <p className="flex-1 text-foreground/90 line-clamp-3 leading-snug">
+                  {scene}
+                </p>
+                <button
+                  onClick={() => removeFromStoryboard(index)}
+                  className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-danger"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Negative prompt */}
       <div>

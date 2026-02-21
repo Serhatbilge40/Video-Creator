@@ -8,17 +8,25 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export function GenerateButton() {
-  const { prompt, model, resolution, duration, isGenerating, credits, error, generate, clearError } =
+  const { prompt, model, resolution, duration, isGenerating, credits, error, generate, clearError, storyboard, generateStoryboard } =
     useVideoStore();
   const hasKey = useApiKeyStore((s) => s.hasKey(model));
 
   const currentModel = MODELS.find((m) => m.id === model)!;
 
   const resolutionMultiplier = resolution === "4K" ? 2 : 1;
-  const estimatedCost = currentModel.creditsPerSecond * duration * resolutionMultiplier;
+  const activePromptCount = storyboard.length > 0 ? storyboard.length : 1;
+  const estimatedCost = currentModel.creditsPerSecond * duration * resolutionMultiplier * activePromptCount;
 
-  const canGenerate =
-    prompt.trim().length > 0 && !isGenerating && hasKey;
+  const canGenerate = (prompt.trim().length > 0 || storyboard.length > 0) && !isGenerating && hasKey;
+
+  const handleGenerateClick = () => {
+    if (storyboard.length > 0) {
+      generateStoryboard();
+    } else {
+      generate();
+    }
+  };
 
   return (
     <div className="rounded-md border border-border bg-surface p-5 shadow-sm">
@@ -71,7 +79,7 @@ export function GenerateButton() {
       </div>
 
       <button
-        onClick={generate}
+        onClick={handleGenerateClick}
         disabled={!canGenerate}
         className="group relative mt-5 flex w-full items-center justify-center gap-2 overflow-hidden rounded-md bg-foreground px-4 py-3 text-sm font-semibold text-background transition-all hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
       >
@@ -83,12 +91,12 @@ export function GenerateButton() {
         ) : (
           <>
             <Sparkles className="h-4 w-4" />
-            Video generieren
+            {storyboard.length > 0 ? `Storyboard generieren (${storyboard.length})` : "Video generieren"}
           </>
         )}
       </button>
 
-      {!prompt.trim() && hasKey && (
+      {!prompt.trim() && storyboard.length === 0 && hasKey && (
         <p className="mt-2 text-center text-xs text-muted-foreground">
           Gib zuerst einen Prompt ein
         </p>

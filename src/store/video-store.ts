@@ -34,6 +34,7 @@ interface VideoStore {
   aspectRatio: AspectRatio;
   style: VideoStyle;
   referenceImages: File[];
+  storyboard: string[];
 
   // State
   generations: VideoGeneration[];
@@ -56,6 +57,10 @@ interface VideoStore {
   removeGeneration: (id: string) => void;
   clearError: () => void;
   toggleFavorite: (id: string) => void;
+  addToStoryboard: (prompt: string) => void;
+  removeFromStoryboard: (index: number) => void;
+  clearStoryboard: () => void;
+  generateStoryboard: () => void;
 }
 
 export const useVideoStore = create<VideoStore>()(
@@ -69,6 +74,7 @@ export const useVideoStore = create<VideoStore>()(
       aspectRatio: "16:9",
       style: "cinematic",
       referenceImages: [],
+      storyboard: [],
 
       generations: [],
       isGenerating: false,
@@ -92,6 +98,9 @@ export const useVideoStore = create<VideoStore>()(
         })),
       clearReferenceImages: () => set({ referenceImages: [] }),
       clearError: () => set({ error: null }),
+      addToStoryboard: (prompt) => set((s) => ({ storyboard: [...s.storyboard, prompt] })),
+      removeFromStoryboard: (index) => set((s) => ({ storyboard: s.storyboard.filter((_, i) => i !== index) })),
+      clearStoryboard: () => set({ storyboard: [] }),
 
       generate: async () => {
         const state = get();
@@ -297,11 +306,29 @@ export const useVideoStore = create<VideoStore>()(
         }
       },
 
-      removeGeneration: (id) =>
+      generateStoryboard: async () => {
+        const state = get();
+        if (state.storyboard.length === 0) return;
+
+        // Loop through storyboard and generate
+        for (const prompt of state.storyboard) {
+          get().setPrompt(prompt);
+          // Small delay before triggering generate to ensure Zustand state has settled
+          await new Promise(r => setTimeout(r, 100));
+          get().generate();
+          // Delay to not hammer the API too instantly
+          await new Promise(r => setTimeout(r, 1000));
+        }
+
+        // Clear storyboard after submitting
+        get().clearStoryboard();
+      },
+
+      removeGeneration: (id: string) =>
         set((s) => ({
           generations: s.generations.filter((g) => g.id !== id),
         })),
-      toggleFavorite: (id) =>
+      toggleFavorite: (id: string) =>
         set((s) => ({
           generations: s.generations.map((g) =>
             g.id === id ? { ...g, isFavorite: !g.isFavorite } : g
@@ -313,7 +340,8 @@ export const useVideoStore = create<VideoStore>()(
       partialize: (state) => ({
         generations: state.generations,
         credits: state.credits,
-      }), // Only save generations and credits
+        storyboard: state.storyboard,
+      }), // Save generations, credits, and storyboard
     }
   )
 );

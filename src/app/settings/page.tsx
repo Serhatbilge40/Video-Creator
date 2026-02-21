@@ -13,8 +13,11 @@ import {
   AlertCircle,
   Shield,
   ExternalLink,
+  Download,
+  Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useVideoStore } from "@/store/video-store";
 
 const API_DOCS: Record<string, { url: string; hint: string }> = {
   "sora-2-pro": {
@@ -47,6 +50,36 @@ export default function SettingsPage() {
   const handleSave = (model: string) => {
     setSavedMessage(model);
     setTimeout(() => setSavedMessage(null), 2000);
+  };
+
+  const { generations } = useVideoStore();
+
+  const handleExport = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(generations, null, 2));
+    const downloadAnchorNode = document.createElement("a");
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "sora_creator_backup.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const imported = JSON.parse(event.target?.result as string);
+        if (Array.isArray(imported)) {
+          useVideoStore.setState({ generations: imported });
+          alert("Backup erfolgreich importiert!");
+        }
+      } catch (err) {
+        alert("Fehler beim Importieren der Datei.");
+      }
+    };
+    reader.readAsText(file);
   };
 
   const configuredCount = keys.filter((k) => k.key.length > 0).length;
@@ -237,6 +270,36 @@ export default function SettingsPage() {
             Füge den Key hier ein — er wird sofort lokal gespeichert
           </li>
         </ol>
+      </div>
+
+      {/* Export / Import Section */}
+      <div className="mt-10 rounded-2xl border border-border bg-surface p-6">
+        <h3 className="text-sm font-semibold text-foreground">
+          Backup & Export 📦
+        </h3>
+        <p className="mt-2 text-sm text-muted">
+          Lade alle deine generierten Videos, Prompts und Favoriten als Backup-Datei herunter oder importiere ein bestehendes Backup.
+        </p>
+        <div className="mt-5 flex items-center gap-3">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 rounded-md bg-foreground px-4 py-2 text-xs font-medium text-background transition-all hover:opacity-90 active:scale-95"
+          >
+            <Download className="h-4 w-4" />
+            Backup Exportieren
+          </button>
+
+          <label className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-surface px-4 py-2 text-xs font-medium text-foreground transition-all hover:bg-surface-hover active:scale-95">
+            <Upload className="h-4 w-4" />
+            Backup Importieren
+            <input
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={handleImport}
+            />
+          </label>
+        </div>
       </div>
     </div>
   );
