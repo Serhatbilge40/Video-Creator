@@ -2,17 +2,44 @@
 
 import { useVideoStore } from "@/store/video-store";
 import { PROMPT_SUGGESTIONS } from "@/lib/types";
-import { Lightbulb, RotateCcw, Wand2, Plus, GripVertical, X } from "lucide-react";
+import { useState } from "react";
+import { Lightbulb, RotateCcw, Wand2, Plus, GripVertical, X, Loader2 } from "lucide-react";
 import { ImageUpload } from "@/components/create/image-upload";
+import { useApiKeyStore } from "@/store/api-key-store";
 
 export function PromptEditor() {
   const { prompt, setPrompt, negativePrompt, setNegativePrompt, storyboard, addToStoryboard, removeFromStoryboard } =
     useVideoStore();
+  const getApiKey = useApiKeyStore((s) => s.getKey);
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
-  const handleEnhance = () => {
+  const handleEnhance = async () => {
     if (!prompt.trim()) return;
-    const enhancements = " cinematic lighting, highly detailed, 8k resolution, photorealistic, masterpiece, depth of field, sharp focus, dramatic lighting";
-    setPrompt(prompt.trim() + enhancements);
+
+    // Check for OpenAI key specifically, since we use gpt-4o-mini
+    const openAiKey = getApiKey("sora-2-pro");
+    if (!openAiKey) {
+      alert("Für 'Enhance Prompt' wird ein OpenAI (Sora 2 Pro) API Key benötigt. Bitte in den Einstellungen hinterlegen.");
+      return;
+    }
+
+    setIsEnhancing(true);
+    try {
+      const res = await fetch("/api/enhance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: prompt.trim(), apiKey: openAiKey }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Fehler beim Verbessern des Prompts");
+
+      setPrompt(data.enhancedPrompt);
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setIsEnhancing(false);
+    }
   };
 
   const handleAddToStoryboard = () => {
@@ -31,11 +58,15 @@ export function PromptEditor() {
           </label>
           <button
             onClick={handleEnhance}
-            disabled={!prompt.trim()}
+            disabled={!prompt.trim() || isEnhancing}
             className="flex items-center gap-1.5 rounded-md text-xs font-medium text-accent hover:text-accent-hover disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
           >
-            <Wand2 className="h-3.5 w-3.5" />
-            Enhance Prompt
+            {isEnhancing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Wand2 className="h-3.5 w-3.5" />
+            )}
+            {isEnhancing ? "Optimiere..." : "Enhance Prompt"}
           </button>
         </div>
         <div className="relative group">
