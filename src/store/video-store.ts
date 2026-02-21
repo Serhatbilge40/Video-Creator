@@ -312,22 +312,23 @@ export const useVideoStore = create<VideoStore>()(
         }
       },
 
-      generateStoryboard: async () => {
+      generateStoryboard: () => {
         const state = get();
         if (state.storyboard.length === 0) return;
 
-        // Loop through storyboard and generate
-        for (const prompt of state.storyboard) {
-          get().setPrompt(prompt);
-          // Small delay before triggering generate to ensure Zustand state has settled
-          await new Promise(r => setTimeout(r, 100));
-          get().generate();
-          // Delay to not hammer the API too instantly
-          await new Promise(r => setTimeout(r, 1000));
-        }
-
-        // Clear storyboard after submitting
+        // Copy the storyboard array and clear it immediately
+        const prompts = [...state.storyboard];
         get().clearStoryboard();
+
+        // Start generators asynchronously with a small offset
+        prompts.forEach((prompt, idx) => {
+          setTimeout(() => {
+            get().setPrompt(prompt);
+            setTimeout(() => {
+              get().generate();
+            }, 100); // 100ms state buffer
+          }, idx * 1000); // 1s staggered delay between triggers
+        });
       },
 
       removeGeneration: (id: string) =>
