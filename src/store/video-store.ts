@@ -6,6 +6,7 @@ import {
   type Resolution,
   type AspectRatio,
   type VideoStyle,
+  MODELS,
 } from "@/lib/types";
 import { useApiKeyStore } from "@/store/api-key-store";
 
@@ -113,6 +114,10 @@ export const useVideoStore = create<VideoStore>()(
           return;
         }
 
+        const currentModel = MODELS.find((m) => m.id === state.model)!;
+        const resolutionMultiplier = state.resolution === "4K" ? 2 : 1;
+        const cost = currentModel.creditsPerSecond * state.duration * resolutionMultiplier;
+
         const newGeneration: VideoGeneration = {
           id: crypto.randomUUID(),
           prompt: state.prompt,
@@ -126,6 +131,7 @@ export const useVideoStore = create<VideoStore>()(
           createdAt: new Date().toISOString(),
           progress: 0,
           isFavorite: false,
+          cost,
         };
 
         set((s) => ({

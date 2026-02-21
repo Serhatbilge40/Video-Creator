@@ -31,6 +31,7 @@ export interface VideoGeneration {
   needsAuth?: boolean; // video URL requires API key auth header
   provider?: string;
   isFavorite?: boolean;
+  cost?: number; // Cost in credits
 }
 
 export interface ModelInfo {
